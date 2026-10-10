@@ -3,6 +3,7 @@ package note
 
 import (
 	"errors"
+	"fmt"
 	"io/fs"
 	"os"
 	"path/filepath"
@@ -35,4 +36,20 @@ func Append(path, entry string) error {
 		return err
 	}
 	return os.WriteFile(path, []byte(body+entry), 0o644)
+}
+
+var ErrOutsideVault = errors.New("note path must be inside the vault")
+
+// Resolve turns a vault-relative note name (as typed by the user) into an
+// absolute path, adding .md if missing and refusing anything outside vault.
+func Resolve(vault, rel string) (string, error) {
+	rel = strings.TrimSpace(rel)
+	if !filepath.IsLocal(rel) {
+		return "", fmt.Errorf("%w: %q", ErrOutsideVault, rel)
+	}
+	rel = filepath.Clean(rel)
+	if filepath.Ext(rel) != ".md" {
+		rel += ".md"
+	}
+	return filepath.Join(vault, rel), nil
 }
