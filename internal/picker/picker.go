@@ -9,9 +9,10 @@ import (
 type Kind int
 
 const (
-	Daily    Kind = iota // fall back to today's daily note
-	Existing             // Path is a vault-relative note that was selected
-	New                  // Path is what the user typed, to be created
+	Daily     Kind = iota // fall back to today's daily note
+	Existing              // Path is a vault-relative note that was selected
+	New                   // Path is what the user typed, to be created
+	Cancelled             // user pressed Esc: save nothing
 )
 
 type Choice struct {
@@ -20,12 +21,12 @@ type Choice struct {
 }
 
 // Parse interprets the output of `fzf --print-query` over lines of the form
-// "relpath\tdisplay". Esc never discards the dump: it falls back to Daily.
+// "relpath\tdisplay".
 func Parse(out string, exit int) (Choice, error) {
 	switch exit {
 	case 0, 1: // 0: selected; 1: no match
-	case 130:
-		return Choice{Kind: Daily}, nil
+	case 130: // esc or ctrl-c
+		return Choice{Kind: Cancelled}, nil
 	default:
 		return Choice{}, fmt.Errorf("fzf exited with status %d", exit)
 	}

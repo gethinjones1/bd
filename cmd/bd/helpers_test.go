@@ -90,7 +90,8 @@ func selectNote(rel string) func() picker.Choice {
 func typeNewName(name string) func() picker.Choice {
 	return func() picker.Choice { return picker.Choice{Kind: picker.New, Path: name} }
 }
-func pressEsc() picker.Choice { return picker.Choice{Kind: picker.Daily} }
+func pressEnter() picker.Choice { return picker.Choice{Kind: picker.Existing, Path: todaysNote} } // daily note is highlighted
+func pressEsc() picker.Choice   { return picker.Choice{Kind: picker.Cancelled} }
 
 // Assertions.
 

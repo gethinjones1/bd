@@ -15,7 +15,7 @@ func TestPickerOffersDailyNoteFirstThenNotes(t *testing.T) {
 	writeFile(t, filepath.Join(vault, "Projects/Kafka.md"), "# Kafka\n")
 	writeFile(t, filepath.Join(vault, ".obsidian/hidden.md"), "nope\n")
 	h.interactive = true
-	h.pickFn = pressEsc
+	h.pickFn = pressEnter
 
 	wantSuccess(t, h.bd("hello"))
 
@@ -56,17 +56,33 @@ func TestPickerTypingANewNameCreatesIt(t *testing.T) {
 	wantFile(t, filepath.Join(vault, "Ideas/Rust CLI.md"), "## 2026-10-10 14:32\nbuild it in go\n")
 }
 
-func TestPickerEscSavesToDailyNote(t *testing.T) {
+func TestPickerEnterOnEmptyPromptSavesToDailyNote(t *testing.T) {
+	h := newHarness(t)
+	vault := h.vault()
+	h.interactive = true
+	h.pickFn = pressEnter
+
+	r := h.bd("quick", "thought")
+
+	wantSuccess(t, r)
+	wantStdout(t, r, "added to Daily/2026-10-10.md\n")
+	wantFile(t, filepath.Join(vault, todaysNote), "## 2026-10-10 14:32\nquick thought\n")
+}
+
+func TestPickerEscCancelsWithoutSaving(t *testing.T) {
 	h := newHarness(t)
 	vault := h.vault()
 	h.interactive = true
 	h.pickFn = pressEsc
 
-	r := h.bd("do", "not", "lose", "me")
+	r := h.bd("oops", "wrong", "thing")
 
-	wantSuccess(t, r)
-	wantStdout(t, r, "added to Daily/2026-10-10.md\n")
-	wantFile(t, filepath.Join(vault, todaysNote), "## 2026-10-10 14:32\ndo not lose me\n")
+	wantFailure(t, r, "cancelled, nothing saved")
+	if r.code != 130 {
+		t.Errorf("exit code = %d, want 130", r.code)
+	}
+	wantStdout(t, r, "")
+	wantNoFile(t, filepath.Join(vault, todaysNote))
 }
 
 func TestPickerNameOutsideVaultFallsBackToDailyNote(t *testing.T) {
@@ -116,7 +132,7 @@ func TestPickerForcedOnWithBDInteractive(t *testing.T) {
 	h := newHarness(t)
 	h.vault()
 	h.env["BD_INTERACTIVE"] = "1"
-	h.pickFn = pressEsc
+	h.pickFn = pressEnter
 
 	wantSuccess(t, h.bd("hello"))
 

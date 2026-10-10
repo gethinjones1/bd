@@ -14,7 +14,7 @@ type Candidate struct {
 	Path, Display string
 }
 
-const header = "enter: save · no match + enter: create note · esc: daily note"
+const header = "enter: save · no match + enter: create note · esc: cancel"
 
 // FZF runs the fzf binary bin over candidates with dir (the vault) as its
 // working directory, so the preview can read notes by relative path.

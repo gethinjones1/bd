@@ -13,19 +13,19 @@ import (
 // target is the note a dump will be appended to.
 type target struct {
 	path  string
-	isNew bool // created by the user typing a new name in the picker
+	isNew bool // the user typed a new name in the picker
 }
 
-// chooseTarget asks the user where the dump goes. Any problem falls back to
-// the daily note with a warning: a dump is never thrown away.
-func (a *app) chooseTarget(v vaultDir, dailyPath string) target {
+// chooseTarget asks the user where the dump goes. ok is false if they
+// cancelled. Any other problem falls back to the daily note with a warning.
+func (a *app) chooseTarget(v vaultDir, dailyPath string) (t target, ok bool) {
 	daily := target{path: dailyPath}
 	dailyRel := v.rel(dailyPath)
 
 	notes, err := vault.ListNotes(v.root, dailyRel)
 	if err != nil {
 		a.warn(err)
-		return daily
+		return daily, true
 	}
 	candidates := []picker.Candidate{{Path: dailyRel, Display: "📅 Today's daily note"}}
 	for _, n := range notes {
@@ -35,16 +35,20 @@ func (a *app) chooseTarget(v vaultDir, dailyPath string) target {
 	choice, err := a.pick(v.root, candidates)
 	if err != nil {
 		a.warn(err)
-		return daily
+		return daily, true
 	}
-	if choice.Kind == picker.Daily {
-		return daily
+	switch choice.Kind {
+	case picker.Cancelled:
+		return target{}, false
+	case picker.Daily:
+		return daily, true
 	}
 	path, err := note.Resolve(v.root, choice.Path)
 	if err != nil {
 		a.warn(err)
-		return daily
+		return daily, true
 	}
 	_, statErr := os.Stat(path)
-	return target{path: path, isNew: errors.Is(statErr, fs.ErrNotExist)}
+	isNew := choice.Kind == picker.New && errors.Is(statErr, fs.ErrNotExist)
+	return target{path: path, isNew: isNew}, true
 }

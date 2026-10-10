@@ -17,8 +17,8 @@ func TestParse(t *testing.T) {
 			want: Choice{Kind: New, Path: "Ideas/Rust CLI"}},
 		{name: "query is trimmed", out: "  spaced  \n", exit: 1,
 			want: Choice{Kind: New, Path: "spaced"}},
-		{name: "esc falls back to daily", out: "half typed\n", exit: 130,
-			want: Choice{Kind: Daily}},
+		{name: "esc cancels", out: "half typed\n", exit: 130,
+			want: Choice{Kind: Cancelled}},
 		{name: "blank query and no selection is daily", out: "\n", exit: 1,
 			want: Choice{Kind: Daily}},
 	}

@@ -40,7 +40,11 @@ func (a *app) runDump(args []string) int {
 
 	t := target{path: v.dailyNote(now)}
 	if !opts.daily && a.interactive() {
-		t = a.chooseTarget(v, t.path)
+		var ok bool
+		if t, ok = a.chooseTarget(v, t.path); !ok {
+			fmt.Fprintln(a.stderr, "bd: cancelled, nothing saved")
+			return 130
+		}
 	}
 
 	if err := note.Append(t.path, note.FormatEntry(now, text)); err != nil {
