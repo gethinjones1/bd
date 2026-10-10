@@ -1,0 +1,30 @@
+# Builds release binaries when a v* tag is pushed (see .github/workflows/release.yml).
+# Archive names must match what install.sh downloads: bd_<os>_<arch>.tar.gz
+version: 2
+project_name: bd
+
+before:
+  hooks:
+    - go test ./...
+
+builds:
+  - main: ./cmd/bd
+    binary: bd
+    env:
+      - CGO_ENABLED=0
+    goos: [darwin, linux]
+    goarch: [amd64, arm64]
+    ldflags:
+      - -s -w -X main.version={{.Version}}
+
+archives:
+  - formats: [tar.gz]
+    name_template: "{{ .ProjectName }}_{{ .Os }}_{{ .Arch }}"
+    files:
+      - README.md
+
+checksum:
+  name_template: checksums.txt
+
+changelog:
+  sort: asc

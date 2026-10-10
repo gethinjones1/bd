@@ -10,12 +10,27 @@ bd opens a picker with **today's daily note** highlighted. Press **Enter** to sa
 
 ## Install
 
-Requires Go 1.25+ and [fzf](https://github.com/junegunn/fzf) (for the picker).
+**macOS and Linux, no Go needed:**
 
 ```sh
-brew install fzf
-git clone <this repo> && cd bd
-go install ./cmd/bd        # installs to ~/go/bin (make sure it's on your PATH)
+curl -fsSL https://raw.githubusercontent.com/OWNER/REPO/main/install.sh | sh
+```
+
+This downloads the right binary for your machine, checks its checksum, and installs it to `~/.local/bin`. Options:
+
+```sh
+curl -fsSL .../install.sh | BD_VERSION=v0.1.0 sh            # a specific version
+curl -fsSL .../install.sh | BD_INSTALL_DIR=/usr/local/bin sh # somewhere else
+```
+
+The picker needs [fzf](https://github.com/junegunn/fzf): `brew install fzf` or `sudo apt install fzf`. Without fzf, bd still works, but dumps go straight to your daily note.
+
+You can also download a binary yourself from the [releases page](https://github.com/OWNER/REPO/releases).
+
+**From source** (Go 1.25+):
+
+```sh
+go install ./cmd/bd        # from a clone; installs to ~/go/bin
 ```
 
 ## Setup
@@ -93,6 +108,21 @@ make test                  # go test ./...
 go test -count=1 ./...     # skip the test cache
 go test ./cmd/bd -run TestPicker -v
 make build                 # builds bin/bd
+make test-install          # tests install.sh against a locally built fake release
+```
+
+### Releasing
+
+Push a version tag:
+
+```sh
+git tag v0.1.0 && git push origin v0.1.0
+```
+
+`.github/workflows/release.yml` runs the tests, then [GoReleaser](https://goreleaser.com) (`.goreleaser.yaml`) builds macOS and Linux binaries for amd64 and arm64 and publishes them, with `checksums.txt`, as a GitHub Release. `install.sh` downloads from that release. To try a release build locally without publishing:
+
+```sh
+go run github.com/goreleaser/goreleaser/v2@latest release --snapshot --clean   # output in dist/
 ```
 
 | Path | What it does |
