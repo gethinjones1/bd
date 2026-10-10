@@ -42,27 +42,20 @@ func TestSaveThenLoadRoundTrips(t *testing.T) {
 	}
 }
 
-func TestResolveVault(t *testing.T) {
-	home := t.TempDir()
-	flagDir, envDir, cfgDir := mkdir(t, home, "flag"), mkdir(t, home, "env"), mkdir(t, home, "cfg")
-	notADir := filepath.Join(home, "file.md")
-	os.WriteFile(notADir, nil, 0o644)
-
+func TestVaultPath(t *testing.T) {
 	tests := []struct {
 		name, flag, env, cfg, want string
 		wantErr                    error
 	}{
-		{name: "flag wins", flag: flagDir, env: envDir, cfg: cfgDir, want: flagDir},
-		{name: "env beats config", env: envDir, cfg: cfgDir, want: envDir},
-		{name: "config fallback", cfg: cfgDir, want: cfgDir},
-		{name: "tilde expands to home", cfg: "~/cfg", want: cfgDir},
+		{name: "flag wins", flag: "/f", env: "/e", cfg: "/c", want: "/f"},
+		{name: "env beats config", env: "/e", cfg: "/c", want: "/e"},
+		{name: "config fallback", cfg: "/c", want: "/c"},
+		{name: "tilde expands to home", cfg: "~/notes", want: "/home/g/notes"},
 		{name: "nothing set", wantErr: ErrNoVault},
-		{name: "missing dir", flag: filepath.Join(home, "missing"), wantErr: ErrBadVault},
-		{name: "file not dir", flag: notADir, wantErr: ErrBadVault},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := ResolveVault(tt.flag, tt.env, Config{Vault: tt.cfg}, home)
+			got, err := VaultPath(tt.flag, tt.env, Config{Vault: tt.cfg}, "/home/g")
 			if !errors.Is(err, tt.wantErr) {
 				t.Fatalf("err = %v, want %v", err, tt.wantErr)
 			}
@@ -73,15 +66,36 @@ func TestResolveVault(t *testing.T) {
 	}
 }
 
-func mapEnv(m map[string]string) func(string) string {
-	return func(k string) string { return m[k] }
+func TestEnsureDir(t *testing.T) {
+	root := t.TempDir()
+
+	t.Run("creates missing dir and parents", func(t *testing.T) {
+		dir := filepath.Join(root, "a", "b")
+		created, err := EnsureDir(dir)
+		if err != nil || !created {
+			t.Fatalf("created=%v err=%v", created, err)
+		}
+		if info, err := os.Stat(dir); err != nil || !info.IsDir() {
+			t.Errorf("dir not created: %v", err)
+		}
+	})
+
+	t.Run("existing dir is left alone", func(t *testing.T) {
+		created, err := EnsureDir(root)
+		if err != nil || created {
+			t.Errorf("created=%v err=%v", created, err)
+		}
+	})
+
+	t.Run("file is refused", func(t *testing.T) {
+		file := filepath.Join(root, "file.md")
+		os.WriteFile(file, nil, 0o644)
+		if _, err := EnsureDir(file); !errors.Is(err, ErrBadVault) {
+			t.Errorf("err = %v, want ErrBadVault", err)
+		}
+	})
 }
 
-func mkdir(t *testing.T, parts ...string) string {
-	t.Helper()
-	p := filepath.Join(parts...)
-	if err := os.MkdirAll(p, 0o755); err != nil {
-		t.Fatal(err)
-	}
-	return p
+func mapEnv(m map[string]string) func(string) string {
+	return func(k string) string { return m[k] }
 }

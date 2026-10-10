@@ -61,19 +61,26 @@ func Save(path string, cfg Config) error {
 	return os.WriteFile(path, append(b, '\n'), 0o644)
 }
 
-// ResolveVault picks the vault from flag, then env, then config, and checks
-// that it is an existing directory.
-func ResolveVault(flag, env string, cfg Config, home string) (string, error) {
+// VaultPath picks the vault from flag, then env, then config, expanding ~.
+func VaultPath(flag, env string, cfg Config, home string) (string, error) {
 	vault := firstNonEmpty(flag, env, cfg.Vault)
 	if vault == "" {
 		return "", ErrNoVault
 	}
-	vault = ExpandHome(vault, home)
-	info, err := os.Stat(vault)
-	if err != nil || !info.IsDir() {
-		return "", fmt.Errorf("%w: %s", ErrBadVault, vault)
+	return ExpandHome(vault, home), nil
+}
+
+// EnsureDir creates dir (and parents) if it is missing, reporting whether it
+// did. A path that exists but is not a directory is refused.
+func EnsureDir(dir string) (created bool, err error) {
+	info, err := os.Stat(dir)
+	if errors.Is(err, fs.ErrNotExist) {
+		return true, os.MkdirAll(dir, 0o755)
 	}
-	return vault, nil
+	if err != nil || !info.IsDir() {
+		return false, fmt.Errorf("%w: %s", ErrBadVault, dir)
+	}
+	return false, nil
 }
 
 // ExpandHome replaces a leading ~ with home.

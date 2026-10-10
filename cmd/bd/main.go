@@ -50,8 +50,11 @@ func run(args []string, stdin io.Reader, stdout, stderr io.Writer) int {
 		return fail(stderr, err)
 	}
 	home, _ := os.UserHomeDir()
-	vaultDir, err := config.ResolveVault(*vaultFlag, os.Getenv("BD_VAULT"), cfg, home)
+	vaultDir, err := config.VaultPath(*vaultFlag, os.Getenv("BD_VAULT"), cfg, home)
 	if err != nil {
+		return fail(stderr, err)
+	}
+	if err := ensureVault(vaultDir, stdout); err != nil {
 		return fail(stderr, err)
 	}
 	now, err := clock()
@@ -145,15 +148,11 @@ func runConfig(args []string, stdout, stderr io.Writer) int {
 		return fail(stderr, err)
 	}
 	home, _ := os.UserHomeDir()
-	value = config.ExpandHome(value, home)
-	if _, err := os.Stat(value); errors.Is(err, fs.ErrNotExist) {
-		if err := os.MkdirAll(value, 0o755); err != nil {
-			return fail(stderr, err)
-		}
-		fmt.Fprintf(stdout, "created %s\n", value)
-	}
-	vault, err := config.ResolveVault(value, "", cfg, home)
+	vault, err := config.VaultPath(value, "", cfg, home)
 	if err != nil {
+		return fail(stderr, err)
+	}
+	if err := ensureVault(vault, stdout); err != nil {
 		return fail(stderr, err)
 	}
 	if cfg.Vault, err = filepath.Abs(vault); err != nil {
@@ -164,6 +163,15 @@ func runConfig(args []string, stdout, stderr io.Writer) int {
 	}
 	fmt.Fprintf(stdout, "vault set to %s\n", cfg.Vault)
 	return 0
+}
+
+// ensureVault creates the vault directory if it is missing, saying so.
+func ensureVault(dir string, stdout io.Writer) error {
+	created, err := config.EnsureDir(dir)
+	if created {
+		fmt.Fprintf(stdout, "created vault %s\n", dir)
+	}
+	return err
 }
 
 // clock returns the current time, or BD_NOW (RFC 3339) when set so tests
