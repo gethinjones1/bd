@@ -5,6 +5,9 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path/filepath"
+
+	"bd/internal/config"
 )
 
 var version = "dev"
@@ -14,6 +17,10 @@ func main() {
 }
 
 func run(args []string, stdin io.Reader, stdout, stderr io.Writer) int {
+	if len(args) > 0 && args[0] == "config" {
+		return runConfig(args[1:], stdout, stderr)
+	}
+
 	fs := flag.NewFlagSet("bd", flag.ContinueOnError)
 	fs.SetOutput(stderr)
 	showVersion := fs.Bool("version", false, "print version and exit")
@@ -25,4 +32,40 @@ func run(args []string, stdin io.Reader, stdout, stderr io.Writer) int {
 		return 0
 	}
 	return 0
+}
+
+func runConfig(args []string, stdout, stderr io.Writer) int {
+	if len(args) != 3 || args[0] != "set" {
+		fmt.Fprintln(stderr, "usage: bd config set vault PATH")
+		return 2
+	}
+	key, value := args[1], args[2]
+	if key != "vault" {
+		fmt.Fprintf(stderr, "bd: unknown config key %q\n", key)
+		return 2
+	}
+
+	path := config.Path(os.Getenv)
+	cfg, err := config.Load(path)
+	if err != nil {
+		return fail(stderr, err)
+	}
+	home, _ := os.UserHomeDir()
+	vault, err := config.ResolveVault(value, "", cfg, home)
+	if err != nil {
+		return fail(stderr, err)
+	}
+	if cfg.Vault, err = filepath.Abs(vault); err != nil {
+		return fail(stderr, err)
+	}
+	if err := config.Save(path, cfg); err != nil {
+		return fail(stderr, err)
+	}
+	fmt.Fprintf(stdout, "vault set to %s\n", cfg.Vault)
+	return 0
+}
+
+func fail(stderr io.Writer, err error) int {
+	fmt.Fprintf(stderr, "bd: %v\n", err)
+	return 1
 }
