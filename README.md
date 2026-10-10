@@ -121,6 +121,4 @@ wantStdout(t, r, "added to Projects/Kafka.md\n")
 ## Roadmap
 
 - **Smarter suggestions:** pull keywords out of the dump and use ripgrep to rank the notes it most likely belongs in, just below the daily note
-- A visible "➕ New note" row in the picker, and stricter matching so new names aren't swallowed by fuzzy matches
-- Read the daily note folder and date format from Obsidian's own settings
-- Link from the daily note when a dump goes elsewhere
+
