@@ -54,10 +54,19 @@ make_release "$WORK/rel"
 
 # 4. warns when fzf is not on PATH (bd still installs)
 rm -rf "$WORK/bin"
+# A PATH with every command except fzf. (A hand-picked list broke on the
+# Ubuntu CI runner, where tar runs gzip as a separate program.)
 mkdir -p "$WORK/nofzf"
-for tool in sh uname tr curl tar mktemp shasum mkdir mv chmod rm cat grep awk cut dirname cp; do
-	p=$(command -v "$tool") && ln -sf "$p" "$WORK/nofzf/$tool"
+old_ifs=$IFS
+IFS=:
+for dir in $PATH; do
+	for p in "$dir"/*; do
+		name=${p##*/}
+		[ "$name" = fzf ] && continue
+		[ -x "$p" ] && [ ! -e "$WORK/nofzf/$name" ] && ln -s "$p" "$WORK/nofzf/$name"
+	done
 done
+IFS=$old_ifs
 out=$(PATH="$WORK/nofzf" BD_DOWNLOAD_URL="file://$WORK/rel" BD_INSTALL_DIR="$WORK/bin" sh "$ROOT/install.sh" 2>&1) || true
 case $out in
 *fzf*) [ -x "$WORK/bin/bd" ] && pass "warns about missing fzf" || fail "missing fzf blocked install: $out" ;;
