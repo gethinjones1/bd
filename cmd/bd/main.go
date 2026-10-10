@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"bd/internal/picker"
+	"bd/internal/vault"
 )
 
 var version = "dev"
@@ -49,6 +50,22 @@ func (a *app) run(args []string) int {
 		switch args[0] {
 		case "config":
 			return a.runConfig(args[1:])
+		case "ls":
+			dir, err := a.openVault("")
+			if err != nil {
+				a.fail(err)
+			}
+			files, err := vault.ListNotes(dir.root)
+
+			if err != nil {
+				a.fail(err)
+			}
+
+			for _, file := range files {
+				fmt.Fprintf(a.stdout, "%s\n", file)
+			}
+
+			return 0
 		}
 	}
 	return a.runDump(args)
