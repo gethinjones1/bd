@@ -1,9 +1,11 @@
 package main
 
 import (
+	"errors"
 	"flag"
 	"fmt"
 	"io"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"time"
@@ -99,6 +101,13 @@ func runConfig(args []string, stdout, stderr io.Writer) int {
 		return fail(stderr, err)
 	}
 	home, _ := os.UserHomeDir()
+	value = config.ExpandHome(value, home)
+	if _, err := os.Stat(value); errors.Is(err, fs.ErrNotExist) {
+		if err := os.MkdirAll(value, 0o755); err != nil {
+			return fail(stderr, err)
+		}
+		fmt.Fprintf(stdout, "created %s\n", value)
+	}
 	vault, err := config.ResolveVault(value, "", cfg, home)
 	if err != nil {
 		return fail(stderr, err)

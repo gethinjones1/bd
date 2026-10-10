@@ -68,14 +68,20 @@ func ResolveVault(flag, env string, cfg Config, home string) (string, error) {
 	if vault == "" {
 		return "", ErrNoVault
 	}
-	if vault == "~" || strings.HasPrefix(vault, "~/") {
-		vault = filepath.Join(home, vault[1:])
-	}
+	vault = ExpandHome(vault, home)
 	info, err := os.Stat(vault)
 	if err != nil || !info.IsDir() {
 		return "", fmt.Errorf("%w: %s", ErrBadVault, vault)
 	}
 	return vault, nil
+}
+
+// ExpandHome replaces a leading ~ with home.
+func ExpandHome(path, home string) string {
+	if path == "~" || strings.HasPrefix(path, "~/") {
+		return filepath.Join(home, path[1:])
+	}
+	return path
 }
 
 func firstNonEmpty(vals ...string) string {
