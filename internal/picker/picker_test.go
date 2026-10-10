@@ -15,8 +15,6 @@ func TestParse(t *testing.T) {
 			want: Choice{Kind: Existing, Path: "Daily/2026-10-10.md"}},
 		{name: "no match creates from query", out: "Ideas/Rust CLI\n", exit: 1,
 			want: Choice{Kind: New, Path: "Ideas/Rust CLI"}},
-		{name: "forced create prints only query", out: "Kafka\n", exit: 0,
-			want: Choice{Kind: New, Path: "Kafka"}},
 		{name: "query is trimmed", out: "  spaced  \n", exit: 1,
 			want: Choice{Kind: New, Path: "spaced"}},
 		{name: "esc falls back to daily", out: "half typed\n", exit: 130,

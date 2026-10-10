@@ -53,8 +53,12 @@ func TestFZFSendsCandidatesAndParsesSelection(t *testing.T) {
 		"Daily/2026-10-10.md\t📅 Today's daily note\nProjects/Kafka.md\tProjects/Kafka\n"; got != want {
 		t.Errorf("fzf stdin = %q, want %q", got, want)
 	}
-	if args := recorded(t, rec, "args"); !strings.Contains(args, "--print-query\n") {
+	args := recorded(t, rec, "args")
+	if !strings.Contains(args, "--print-query\n") {
 		t.Errorf("fzf args missing --print-query:\n%s", args)
+	}
+	if strings.Contains(args, "alt-enter") {
+		t.Errorf("fzf args should not bind alt-enter:\n%s", args)
 	}
 	if pwd, _ := filepath.EvalSymlinks(strings.TrimSpace(recorded(t, rec, "pwd"))); !strings.HasSuffix(pwd, filepath.Base(vault)) {
 		t.Errorf("fzf ran in %q, want the vault %q (so previews can read notes)", pwd, vault)

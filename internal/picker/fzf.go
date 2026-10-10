@@ -14,7 +14,7 @@ type Candidate struct {
 	Path, Display string
 }
 
-const header = "enter: save · no match + enter: create note · alt-enter: create typed name · esc: daily note"
+const header = "enter: save · no match + enter: create note · esc: daily note"
 
 // FZF runs the fzf binary bin over candidates with dir (the vault) as its
 // working directory, so the preview can read notes by relative path.
@@ -28,7 +28,6 @@ func FZF(bin, dir string, candidates []Candidate) (Choice, error) {
 		"--delimiter", "\t", "--with-nth", "2",
 		"--layout", "reverse", "--height", "40%",
 		"--prompt", "bd ▸ ", "--header", header,
-		"--bind", "alt-enter:print-query",
 		"--preview", "cat {1} 2>/dev/null", "--preview-window", "right,50%,border-left",
 	)
 	cmd.Dir = dir

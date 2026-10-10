@@ -23,7 +23,7 @@ type Choice struct {
 // "relpath\tdisplay". Esc never discards the dump: it falls back to Daily.
 func Parse(out string, exit int) (Choice, error) {
 	switch exit {
-	case 0, 1: // 0: selected or print-query; 1: no match
+	case 0, 1: // 0: selected; 1: no match
 	case 130:
 		return Choice{Kind: Daily}, nil
 	default:
