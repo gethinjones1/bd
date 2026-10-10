@@ -48,6 +48,9 @@ func main() {
 func (a *app) run(args []string) int {
 	if len(args) > 0 {
 		switch args[0] {
+		case "help":
+			a.printUsage()
+			return 0
 		case "config":
 			return a.runConfig(args[1:])
 		case "ls":

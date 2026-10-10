@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"flag"
 	"fmt"
 	"io"
@@ -19,8 +20,13 @@ type dumpOptions struct {
 // runDump is the default command: capture text, decide which note it goes
 // in, append it, and say where it went.
 func (a *app) runDump(args []string) int {
-	opts, err := parseDumpFlags(args, a.stderr)
+	opts, err := parseDumpFlags(args)
+	if errors.Is(err, flag.ErrHelp) {
+		a.printUsage()
+		return 0
+	}
 	if err != nil {
+		fmt.Fprintf(a.stderr, "bd: %v\nrun 'bd --help' for usage\n", err)
 		return 2
 	}
 	if opts.version {
@@ -58,14 +64,21 @@ func (a *app) runDump(args []string) int {
 	return 0
 }
 
-func parseDumpFlags(args []string, stderr io.Writer) (dumpOptions, error) {
+func parseDumpFlags(args []string) (dumpOptions, error) {
 	var opts dumpOptions
-	fs := flag.NewFlagSet("bd", flag.ContinueOnError)
-	fs.SetOutput(stderr)
-	fs.BoolVar(&opts.version, "version", false, "print version and exit")
-	fs.StringVar(&opts.vault, "vault", "", "vault directory (overrides BD_VAULT and config)")
-	fs.BoolVar(&opts.daily, "daily", false, "append straight to today's daily note, skipping the picker")
+	fs := newDumpFlags(&opts)
 	err := fs.Parse(args)
 	opts.words = fs.Args()
 	return opts, err
+}
+
+// newDumpFlags defines bd's flags. Errors are reported by the caller, so
+// the flag package is told to print nothing itself.
+func newDumpFlags(opts *dumpOptions) *flag.FlagSet {
+	fs := flag.NewFlagSet("bd", flag.ContinueOnError)
+	fs.SetOutput(io.Discard)
+	fs.BoolVar(&opts.version, "version", false, "print version and exit")
+	fs.StringVar(&opts.vault, "vault", "", "use the vault at `PATH` (overrides BD_VAULT and config)")
+	fs.BoolVar(&opts.daily, "daily", false, "append straight to today's daily note, skipping the picker")
+	return fs
 }
