@@ -2,42 +2,34 @@ package main
 
 import (
 	"os"
-	"time"
-)
 
-// clock returns the current time, or BD_NOW (RFC 3339) when set so tests
-// can pin the date.
-func clock() (time.Time, error) {
-	if v := os.Getenv("BD_NOW"); v != "" {
-		return time.Parse(time.RFC3339, v)
-	}
-	return time.Now(), nil
-}
+	"bd/internal/picker"
+)
 
 // interactive reports whether to show the picker: BD_INTERACTIVE=1/0 forces
 // it on/off, otherwise only when stdout is a terminal.
-func interactive() bool {
-	switch os.Getenv("BD_INTERACTIVE") {
+func (a *app) interactive() bool {
+	switch a.getenv("BD_INTERACTIVE") {
 	case "1":
 		return true
 	case "0":
 		return false
 	}
-	return isTerminal(os.Stdout)
+	return a.stdoutIsTTY
 }
 
-func isTerminal(r any) bool {
-	f, ok := r.(*os.File)
-	if !ok {
-		return false
-	}
+func isTerminal(f *os.File) bool {
 	info, err := f.Stat()
 	return err == nil && info.Mode()&os.ModeCharDevice != 0
 }
 
-func fzfBin() string {
-	if bin := os.Getenv("BD_FZF"); bin != "" {
-		return bin
+// fzfPicker runs fzf, or the binary named by BD_FZF (e.g. sk).
+func fzfPicker(getenv func(string) string) func(string, []picker.Candidate) (picker.Choice, error) {
+	bin := getenv("BD_FZF")
+	if bin == "" {
+		bin = "fzf"
 	}
-	return "fzf"
+	return func(vaultRoot string, candidates []picker.Candidate) (picker.Choice, error) {
+		return picker.FZF(bin, vaultRoot, candidates)
+	}
 }

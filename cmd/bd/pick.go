@@ -2,7 +2,6 @@ package main
 
 import (
 	"errors"
-	"io"
 	"io/fs"
 	"os"
 
@@ -19,13 +18,13 @@ type target struct {
 
 // chooseTarget asks the user where the dump goes. Any problem falls back to
 // the daily note with a warning: a dump is never thrown away.
-func chooseTarget(v vaultDir, dailyPath string, stderr io.Writer) target {
+func (a *app) chooseTarget(v vaultDir, dailyPath string) target {
 	daily := target{path: dailyPath}
 	dailyRel := v.rel(dailyPath)
 
 	notes, err := vault.ListNotes(v.root, dailyRel)
 	if err != nil {
-		warn(stderr, err)
+		a.warn(err)
 		return daily
 	}
 	candidates := []picker.Candidate{{Path: dailyRel, Display: "📅 Today's daily note"}}
@@ -33,9 +32,9 @@ func chooseTarget(v vaultDir, dailyPath string, stderr io.Writer) target {
 		candidates = append(candidates, picker.Candidate{Path: n, Display: picker.DisplayName(n)})
 	}
 
-	choice, err := picker.FZF(fzfBin(), v.root, candidates)
+	choice, err := a.pick(v.root, candidates)
 	if err != nil {
-		warn(stderr, err)
+		a.warn(err)
 		return daily
 	}
 	if choice.Kind == picker.Daily {
@@ -43,7 +42,7 @@ func chooseTarget(v vaultDir, dailyPath string, stderr io.Writer) target {
 	}
 	path, err := note.Resolve(v.root, choice.Path)
 	if err != nil {
-		warn(stderr, err)
+		a.warn(err)
 		return daily
 	}
 	_, statErr := os.Stat(path)

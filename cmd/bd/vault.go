@@ -2,8 +2,6 @@ package main
 
 import (
 	"fmt"
-	"io"
-	"os"
 	"path/filepath"
 	"time"
 
@@ -19,17 +17,16 @@ type vaultDir struct {
 
 // openVault loads the config, picks the vault (--vault, BD_VAULT, config),
 // and creates its directory if missing.
-func openVault(flagValue string, stdout io.Writer) (vaultDir, error) {
-	cfg, err := config.Load(config.Path(os.Getenv))
+func (a *app) openVault(flagValue string) (vaultDir, error) {
+	cfg, err := config.Load(config.Path(a.getenv))
 	if err != nil {
 		return vaultDir{}, err
 	}
-	home, _ := os.UserHomeDir()
-	root, err := config.VaultPath(flagValue, os.Getenv("BD_VAULT"), cfg, home)
+	root, err := config.VaultPath(flagValue, a.getenv("BD_VAULT"), cfg, a.getenv("HOME"))
 	if err != nil {
 		return vaultDir{}, err
 	}
-	if err := ensureVault(root, stdout); err != nil {
+	if err := a.ensureVault(root); err != nil {
 		return vaultDir{}, err
 	}
 	return vaultDir{root: root, cfg: cfg}, nil
@@ -49,10 +46,10 @@ func (v vaultDir) rel(path string) string {
 }
 
 // ensureVault creates the vault directory if it is missing, saying so.
-func ensureVault(dir string, stdout io.Writer) error {
+func (a *app) ensureVault(dir string) error {
 	created, err := config.EnsureDir(dir)
 	if created {
-		fmt.Fprintf(stdout, "created vault %s\n", dir)
+		fmt.Fprintf(a.stdout, "created vault %s\n", dir)
 	}
 	return err
 }

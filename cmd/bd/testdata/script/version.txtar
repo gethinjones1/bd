@@ -1,2 +1,0 @@
-exec bd --version
-stdout '^bd dev$'

@@ -18,41 +18,38 @@ type dumpOptions struct {
 
 // runDump is the default command: capture text, decide which note it goes
 // in, append it, and say where it went.
-func runDump(args []string, stdin io.Reader, stdout, stderr io.Writer) int {
-	opts, err := parseDumpFlags(args, stderr)
+func (a *app) runDump(args []string) int {
+	opts, err := parseDumpFlags(args, a.stderr)
 	if err != nil {
 		return 2
 	}
 	if opts.version {
-		fmt.Fprintf(stdout, "bd %s\n", version)
+		fmt.Fprintf(a.stdout, "bd %s\n", version)
 		return 0
 	}
 
-	text, err := capture.Read(opts.words, stdin, isTerminal(stdin))
+	text, err := capture.Read(opts.words, a.stdin, a.stdinIsTTY)
 	if err != nil {
-		return fail(stderr, err)
+		return a.fail(err)
 	}
-	v, err := openVault(opts.vault, stdout)
+	v, err := a.openVault(opts.vault)
 	if err != nil {
-		return fail(stderr, err)
+		return a.fail(err)
 	}
-	now, err := clock()
-	if err != nil {
-		return fail(stderr, err)
-	}
+	now := a.now()
 
 	t := target{path: v.dailyNote(now)}
-	if !opts.daily && interactive() {
-		t = chooseTarget(v, t.path, stderr)
+	if !opts.daily && a.interactive() {
+		t = a.chooseTarget(v, t.path)
 	}
 
 	if err := note.Append(t.path, note.FormatEntry(now, text)); err != nil {
-		return fail(stderr, err)
+		return a.fail(err)
 	}
 	if t.isNew {
-		fmt.Fprintf(stdout, "created %s\n", v.rel(t.path))
+		fmt.Fprintf(a.stdout, "created %s\n", v.rel(t.path))
 	} else {
-		fmt.Fprintf(stdout, "added to %s\n", v.rel(t.path))
+		fmt.Fprintf(a.stdout, "added to %s\n", v.rel(t.path))
 	}
 	return 0
 }
