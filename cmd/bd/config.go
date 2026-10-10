@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"path/filepath"
 
-	"bd/internal/config"
+	"github.com/gethinjones1/bd/internal/config"
 )
 
 // runConfig handles `bd config set vault PATH`.

@@ -5,7 +5,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"bd/internal/config"
+	"github.com/gethinjones1/bd/internal/config"
 )
 
 func TestConfigSetVaultSavesIt(t *testing.T) {

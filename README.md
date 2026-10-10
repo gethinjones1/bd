@@ -13,7 +13,7 @@ bd opens a picker with **today's daily note** highlighted. Press **Enter** to sa
 **macOS and Linux, no Go needed:**
 
 ```sh
-curl -fsSL https://raw.githubusercontent.com/OWNER/REPO/main/install.sh | sh
+curl -fsSL https://raw.githubusercontent.com/gethinjones1/bd/main/install.sh | sh
 ```
 
 This downloads the right binary for your machine, checks its checksum, and installs it to `~/.local/bin`. Options:
@@ -25,12 +25,12 @@ curl -fsSL .../install.sh | BD_INSTALL_DIR=/usr/local/bin sh # somewhere else
 
 The picker needs [fzf](https://github.com/junegunn/fzf): `brew install fzf` or `sudo apt install fzf`. Without fzf, bd still works, but dumps go straight to your daily note.
 
-You can also download a binary yourself from the [releases page](https://github.com/OWNER/REPO/releases).
+You can also download a binary yourself from the [releases page](https://github.com/gethinjones1/bd/releases).
 
-**From source** (Go 1.25+):
+**With Go** (1.25+):
 
 ```sh
-go install ./cmd/bd        # from a clone; installs to ~/go/bin
+go install github.com/gethinjones1/bd/cmd/bd@latest   # installs to ~/go/bin
 ```
 
 ## Setup

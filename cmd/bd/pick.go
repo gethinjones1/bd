@@ -5,9 +5,9 @@ import (
 	"io/fs"
 	"os"
 
-	"bd/internal/note"
-	"bd/internal/picker"
-	"bd/internal/vault"
+	"github.com/gethinjones1/bd/internal/note"
+	"github.com/gethinjones1/bd/internal/picker"
+	"github.com/gethinjones1/bd/internal/vault"
 )
 
 // target is the note a dump will be appended to.

@@ -1,14 +1,14 @@
 #!/bin/sh
 # Install bd from GitHub Releases. No Go required.
 #
-#   curl -fsSL https://raw.githubusercontent.com/OWNER/REPO/main/install.sh | sh
+#   curl -fsSL https://raw.githubusercontent.com/gethinjones1/bd/main/install.sh | sh
 #
 # Options (environment variables):
 #   BD_VERSION      release tag to install, e.g. v0.2.0 (default: latest)
 #   BD_INSTALL_DIR  where to put the binary (default: ~/.local/bin)
 set -eu
 
-REPO="${BD_REPO:-OWNER/REPO}"
+REPO="${BD_REPO:-gethinjones1/bd}"
 BASE_URL="${BD_DOWNLOAD_URL:-https://github.com/$REPO/releases}"
 VERSION="${BD_VERSION:-latest}"
 INSTALL_DIR="${BD_INSTALL_DIR:-$HOME/.local/bin}"

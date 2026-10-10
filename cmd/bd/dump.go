@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"io"
 
-	"bd/internal/capture"
-	"bd/internal/note"
+	"github.com/gethinjones1/bd/internal/capture"
+	"github.com/gethinjones1/bd/internal/note"
 )
 
 type dumpOptions struct {

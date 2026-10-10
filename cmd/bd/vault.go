@@ -5,8 +5,8 @@ import (
 	"path/filepath"
 	"time"
 
-	"bd/internal/config"
-	"bd/internal/note"
+	"github.com/gethinjones1/bd/internal/config"
+	"github.com/gethinjones1/bd/internal/note"
 )
 
 // vaultDir is an opened vault: its root directory plus the loaded config.

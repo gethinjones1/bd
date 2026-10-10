@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"bd/internal/picker"
+	"github.com/gethinjones1/bd/internal/picker"
 )
 
 func TestPickerOffersDailyNoteFirstThenNotes(t *testing.T) {

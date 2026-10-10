@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"bd/internal/picker"
+	"github.com/gethinjones1/bd/internal/picker"
 )
 
 // These tests run bd's real run() in-process against a fake outside world:

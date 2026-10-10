@@ -3,7 +3,7 @@ package main
 import (
 	"os"
 
-	"bd/internal/picker"
+	"github.com/gethinjones1/bd/internal/picker"
 )
 
 // interactive reports whether to show the picker: BD_INTERACTIVE=1/0 forces
