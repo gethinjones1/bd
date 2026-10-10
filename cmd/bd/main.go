@@ -13,6 +13,8 @@ import (
 	"bd/internal/capture"
 	"bd/internal/config"
 	"bd/internal/note"
+	"bd/internal/picker"
+	"bd/internal/vault"
 )
 
 var version = "dev"
@@ -30,7 +32,7 @@ func run(args []string, stdin io.Reader, stdout, stderr io.Writer) int {
 	fs.SetOutput(stderr)
 	showVersion := fs.Bool("version", false, "print version and exit")
 	vaultFlag := fs.String("vault", "", "vault directory (overrides BD_VAULT and config)")
-	fs.Bool("daily", false, "append straight to today's daily note")
+	daily := fs.Bool("daily", false, "append straight to today's daily note, skipping the picker")
 	if err := fs.Parse(args); err != nil {
 		return 2
 	}
@@ -48,7 +50,7 @@ func run(args []string, stdin io.Reader, stdout, stderr io.Writer) int {
 		return fail(stderr, err)
 	}
 	home, _ := os.UserHomeDir()
-	vault, err := config.ResolveVault(*vaultFlag, os.Getenv("BD_VAULT"), cfg, home)
+	vaultDir, err := config.ResolveVault(*vaultFlag, os.Getenv("BD_VAULT"), cfg, home)
 	if err != nil {
 		return fail(stderr, err)
 	}
@@ -57,31 +59,73 @@ func run(args []string, stdin io.Reader, stdout, stderr io.Writer) int {
 		return fail(stderr, err)
 	}
 
-	target := note.DailyPath(vault, cfg.DailyDir, now)
+	dailyPath := note.DailyPath(vaultDir, cfg.DailyDir, now)
+	target, isNew := dailyPath, false
+	if !*daily && interactive() {
+		target, isNew = pickTarget(vaultDir, dailyPath, stderr)
+	}
+
 	if err := note.Append(target, note.FormatEntry(now, text)); err != nil {
 		return fail(stderr, err)
 	}
-	rel, _ := filepath.Rel(vault, target)
-	fmt.Fprintf(stdout, "added to %s\n", rel)
+	rel, _ := filepath.Rel(vaultDir, target)
+	if isNew {
+		fmt.Fprintf(stdout, "created %s\n", rel)
+	} else {
+		fmt.Fprintf(stdout, "added to %s\n", rel)
+	}
 	return 0
 }
 
-// clock returns the current time, or BD_NOW (RFC 3339) when set so tests
-// can pin the date.
-func clock() (time.Time, error) {
-	if v := os.Getenv("BD_NOW"); v != "" {
-		return time.Parse(time.RFC3339, v)
+// pickTarget asks the user where the dump goes. Any problem falls back to
+// the daily note with a warning: a dump is never thrown away.
+func pickTarget(vaultDir, dailyPath string, stderr io.Writer) (path string, isNew bool) {
+	dailyRel, _ := filepath.Rel(vaultDir, dailyPath)
+	dailyRel = filepath.ToSlash(dailyRel)
+	notes, err := vault.ListNotes(vaultDir, dailyRel)
+	if err != nil {
+		warn(stderr, err)
+		return dailyPath, false
 	}
-	return time.Now(), nil
+	candidates := []picker.Candidate{{Path: dailyRel, Display: "📅 Today's daily note"}}
+	for _, n := range notes {
+		candidates = append(candidates, picker.Candidate{Path: n, Display: picker.DisplayName(n)})
+	}
+
+	choice, err := picker.FZF(fzfBin(), vaultDir, candidates)
+	if err != nil {
+		warn(stderr, err)
+		return dailyPath, false
+	}
+	if choice.Kind == picker.Daily {
+		return dailyPath, false
+	}
+	path, err = note.Resolve(vaultDir, choice.Path)
+	if err != nil {
+		warn(stderr, err)
+		return dailyPath, false
+	}
+	_, statErr := os.Stat(path)
+	return path, errors.Is(statErr, fs.ErrNotExist)
 }
 
-func isTerminal(r io.Reader) bool {
-	f, ok := r.(*os.File)
-	if !ok {
+func fzfBin() string {
+	if bin := os.Getenv("BD_FZF"); bin != "" {
+		return bin
+	}
+	return "fzf"
+}
+
+// interactive reports whether to show the picker: BD_INTERACTIVE=1/0 forces
+// it on/off, otherwise only when stdout is a terminal.
+func interactive() bool {
+	switch os.Getenv("BD_INTERACTIVE") {
+	case "1":
+		return true
+	case "0":
 		return false
 	}
-	info, err := f.Stat()
-	return err == nil && info.Mode()&os.ModeCharDevice != 0
+	return isTerminal(os.Stdout)
 }
 
 func runConfig(args []string, stdout, stderr io.Writer) int {
@@ -120,6 +164,28 @@ func runConfig(args []string, stdout, stderr io.Writer) int {
 	}
 	fmt.Fprintf(stdout, "vault set to %s\n", cfg.Vault)
 	return 0
+}
+
+// clock returns the current time, or BD_NOW (RFC 3339) when set so tests
+// can pin the date.
+func clock() (time.Time, error) {
+	if v := os.Getenv("BD_NOW"); v != "" {
+		return time.Parse(time.RFC3339, v)
+	}
+	return time.Now(), nil
+}
+
+func isTerminal(r any) bool {
+	f, ok := r.(*os.File)
+	if !ok {
+		return false
+	}
+	info, err := f.Stat()
+	return err == nil && info.Mode()&os.ModeCharDevice != 0
+}
+
+func warn(stderr io.Writer, err error) {
+	fmt.Fprintf(stderr, "bd: %v (saving to daily note instead)\n", err)
 }
 
 func fail(stderr io.Writer, err error) int {
